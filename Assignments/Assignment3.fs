@@ -10,6 +10,12 @@ open Microsoft.Xna.Framework
 // A set of visited nodes
 // If a node has been checked, remove from unvisited and add to visited nodes
 // The checked node contains a tentative distance to the destination node
+
+// Things to keep in mind:
+// - (edge) routes are double sided
+// - dont forget to put back the minimum in closestNeighbor when another minimum has been found
+// - filtering out visited neighbors 
+
 module internal Helper3 = 
     [<AllowNullLiteral>]
     type Node = 
@@ -19,19 +25,21 @@ module internal Helper3 =
         val mutable Weight : float32
         
         new(l) = 
-            { Location = l
-              Visited = false
-              Neighbors = List.empty<Node>
-              Weight = infinityf }
-        
-        static member CmpLoc (a : Node) (b : Vector2) = a.Location.X = b.X && a.Location.Y = b.Y
+            { 
+                Location = l
+                Visited = false
+                Neighbors = List.empty<Node>
+                Weight = infinityf 
+            }
     
     type Edge = 
         val Source : Node
         val Dest : Node
         new(s, d) = 
-            { Source = new Node(s)
-              Dest = new Node(d) }
+            { 
+                Source = new Node(s)
+                Dest = new Node(d) 
+            }
     
     let Dijkstra (start : Vector2) (dest : Vector2) (roadList : list<Edge>) = 
         let fillMatrix (l : list<Edge>) = 
@@ -45,12 +53,12 @@ module internal Helper3 =
                         m.[int v.Dest.Location.X, int v.Dest.Location.Y] <- new Node(v.Dest.Location)
                     m.[int v.Source.Location.X, int v.Source.Location.Y].Neighbors <- (m.[int v.Dest.Location.X, 
                                                                                           int v.Dest.Location.Y] 
-                                                                                       :: m.[intv.Source.Location.X, 
-                                                                                             intv.Source.Location.Y].Neighbors)
+                                                                                       :: m.[int v.Source.Location.X, 
+                                                                                             int v.Source.Location.Y].Neighbors)
                     m.[int v.Dest.Location.X, int v.Dest.Location.Y].Neighbors <- (m.[int v.Source.Location.X, 
                                                                                       int v.Source.Location.Y] 
-                                                                                   :: m.[intv.Dest.Location.X, 
-                                                                                         intv.Dest.Location.Y].Neighbors)
+                                                                                   :: m.[int v.Dest.Location.X, 
+                                                                                         int v.Dest.Location.Y].Neighbors)
                     add m vs
             
             let len = List.length l
@@ -77,24 +85,22 @@ module internal Helper3 =
                 x.Weight <- Math.Min(Vector2.Distance(x.Location, c.Location) + c.Weight, x.Weight)
                 setNeighborWeight c xs (x :: acc)
         
-        let rec trace (m : Node [,]) (traversal) (q : list<Node>) = 
-            if List.isEmpty q then traversal
-            //failwith "List was empty without properly finding a path to destination..."
-            else 
+        let rec trace (m : Node [,]) (q : list<Node>) = 
+            match q with
+            | [] -> ()
+            | _ ->
                 let (cur, rest) = closestNeighbor (List.tail q) (List.head q) [] // Take node with smallest distance
                 if not cur.Visited then 
-                    cur.Neighbors <- setNeighborWeight cur cur.Neighbors [] // Determine tentative distances
                     cur.Visited <- true
-                    let t = 
-                        cur.Neighbors
-                        |> List.filter (fun (node : Node) -> not node.Visited)
-                        |> List.append rest
-                    trace m (cur.Location :: traversal) t
-                else trace m traversal rest
+                    setNeighborWeight cur cur.Neighbors [] // Determine tentative distances
+                    |> List.filter (fun (node : Node) -> not node.Visited)
+                    |> List.append rest
+                    |> trace m
+                else trace m rest
         
         let m = fillMatrix roadList
         m.[int start.X, int start.Y].Weight <- float32 0
-        trace m [] [ m.[int start.X, int start.Y] ] |> ignore
+        trace m [ m.[int start.X, int start.Y] ] 
         traceback m.[int dest.X, int dest.Y]
 
 module public Assignment3 = 
@@ -102,19 +108,4 @@ module public Assignment3 =
         List.ofSeq roads
         |> List.map (fun (tpl : Tuple<Vector2, Vector2>) -> new Helper3.Edge(tpl.Item1, tpl.Item2))
         |> Helper3.Dijkstra start dest
-        //|> List.pairwise
-        |> Enumerable.AsEnumerable
-aversal rest
-        
-        let m = fillMatrix roadList
-        m.[int start.X, int start.Y].Weight <- float32 0
-        trace m [] [ m.[int start.X, int start.Y] ] |> ignore
-        traceback m.[int dest.X, int dest.Y]
-
-module public Assignment3 = 
-    let FindRoute (start : Vector2) (dest : Vector2) (roads : IEnumerable<Tuple<Vector2, Vector2>>) : IEnumerable<Vector2 * Vector2> = 
-        List.ofSeq roads
-        |> List.map (fun (tpl : Tuple<Vector2, Vector2>) -> new Helper3.Edge(tpl.Item1, tpl.Item2))
-        |> Helper3.Dijkstra start dest
-        //|> List.pairwise
         |> Enumerable.AsEnumerable
