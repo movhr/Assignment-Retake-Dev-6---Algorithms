@@ -19,16 +19,17 @@ module internal Helper2 =
         new(v,l,r,d) = {Value = v; Left = l; Right=r; Depth=d}
 
         static member Construct (pList:list<Vector2>) : Node =
-            let rec add pList depth =
-                match pList with
-                | [] -> null
-                | _ ->
-                    let sortedList = List.sortBy ( fun (e:Vector2) -> getAxis depth e ) pList
-                    let iMedian = List.length sortedList / 2
-                    let l,t = List.splitAt iMedian sortedList
-                    let r = List.tail t
-                    let node = new Node(List.head t, ( add l (depth+1) ), ( add r (depth+1) ), depth )
-                    node
+            let takeMedian alist = 
+                let l,m = List.splitAt (List.length alist / 2 ) alist
+                l, List.head m, List.tail m
+
+            let rec add pList depth = 
+                if List.isEmpty pList then null
+                else
+                    let l,h,r = pList
+                                |> List.sortBy ( fun (e:Vector2) -> getAxis depth e ) 
+                                |> takeMedian
+                    new Node(h, add l (depth+1) , add r (depth+1), depth)
             add pList 0
                         
         ///Corecursive divide and conquer approach on post-order kdtree traversal
