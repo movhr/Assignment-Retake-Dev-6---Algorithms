@@ -35,9 +35,8 @@ module internal Helper2 =
         ///Corecursive divide and conquer approach on post-order kdtree traversal
         member Node.RangeSearch distance target : list<Vector2> = 
             let rec search (node:Node) (acc:list<Vector2>) depth  : list<Vector2> =
-                match isNull node with
-                | true -> acc
-                | false -> 
+                if isNull node then acc
+                else
                     let l = (search node.Left List.empty<Vector2> (depth+1) )
                     let r = (search node.Right List.empty<Vector2> (depth+1) )
                     //Textbook: doesn't have any additional value as the course guide asks to check for euclidian distance
@@ -49,7 +48,7 @@ module internal Helper2 =
                     else
                         (l @ r)
             
-            search Node List.empty<Vector2> 0
+            search Node [] 0
 
 module public Assignment2 = 
     let FindSpecialBuildingsWithinDistanceFromHouse (specialBuildings:IEnumerable<Vector2>) (housesAndDistances:IEnumerable<Tuple<Vector2, Single>>) : IEnumerable<IEnumerable<Vector2>> = 

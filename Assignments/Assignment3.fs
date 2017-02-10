@@ -42,63 +42,63 @@ module internal Helper3 =
             }
     
     let Dijkstra (start : Vector2) (dest : Vector2) (roadList : list<Edge>) = 
-        let fillMatrix (l : list<Edge>) = 
-            let rec add (m : Node [,]) (l : list<Edge>) = 
-                match l with
-                | [] -> m
-                | v :: vs -> 
-                    if isNull m.[int v.Source.Location.X, int v.Source.Location.Y] then 
-                        m.[int v.Source.Location.X, int v.Source.Location.Y] <- new Node(v.Source.Location)
-                    if isNull m.[int v.Dest.Location.X, int v.Dest.Location.Y] then 
-                        m.[int v.Dest.Location.X, int v.Dest.Location.Y] <- new Node(v.Dest.Location)
-                    m.[int v.Source.Location.X, int v.Source.Location.Y].Neighbors <- (m.[int v.Dest.Location.X, 
-                                                                                          int v.Dest.Location.Y] 
-                                                                                       :: m.[int v.Source.Location.X, 
-                                                                                             int v.Source.Location.Y].Neighbors)
-                    m.[int v.Dest.Location.X, int v.Dest.Location.Y].Neighbors <- (m.[int v.Source.Location.X, 
-                                                                                      int v.Source.Location.Y] 
-                                                                                   :: m.[int v.Dest.Location.X, 
-                                                                                         int v.Dest.Location.Y].Neighbors)
-                    add m vs
-            
-            let len = List.length l
-            add (Array2D.create len len null) l
+        let newNode (v:Vector2) (m:Node[,]) =
+            if isNull m.[int v.X, int v.Y] then 
+                m.[int v.X, int v.Y] <- new Node(v)
+
+        let linkEdge (v:Edge) (m:Node[,]) = 
+            m.[int v.Source.Location.X, int v.Source.Location.Y].Neighbors 
+                <- (m.[int v.Dest.Location.X,  int v.Dest.Location.Y] 
+                :: m.[int v.Source.Location.X,  int v.Source.Location.Y].Neighbors)
+            m.[int v.Dest.Location.X, int v.Dest.Location.Y].Neighbors 
+                <- (m.[int v.Source.Location.X, int v.Source.Location.Y] 
+                :: m.[int v.Dest.Location.X, int v.Dest.Location.Y].Neighbors)
         
-        let rec closestNeighbor (l : list<Node>) (min : Node) (rest : list<Node>) = 
+        let addToMatrix (v:Edge) (m:Node[,]) = 
+            newNode v.Source.Location m
+            newNode v.Dest.Location m
+            linkEdge v m
+            
+
+        let createMatrix (l : list<Edge>) = 
+            let m = Array2D.create<Node> l.Length l.Length null
+            List.iter (fun (v:Edge) -> addToMatrix v m ) l
+            m
+
+        let closestNeighbor  (l : list<Node>) = 
+            let best = List.reduce (fun (acc:Node) (elem:Node) -> if elem.Weight < acc.Weight then elem else acc) l 
+            best, List.except [best] l
+
+        let rec closestNeighbor2 (l : list<Node>) (min : Node) (rest : list<Node>) = 
             match l with
             | [] -> min, rest
             | x :: xs -> 
-                if x.Weight < min.Weight then closestNeighbor xs x (min :: rest)
-                else closestNeighbor xs min (x :: rest)
+                if x.Weight < min.Weight then closestNeighbor2 xs x (min :: rest)
+                else closestNeighbor2 xs min (x :: rest)
         
         let traceback (destNode : Node) = 
             let rec shortestPath (cur : Node) (prev : Node) (acc : list<Vector2 * Vector2>) = 
-                let closest, rest = closestNeighbor (List.tail cur.Neighbors) (List.head cur.Neighbors) []
+                let closest,ignore = closestNeighbor cur.Neighbors
                 if closest.Weight >= cur.Weight then acc
                 else shortestPath closest cur ((prev.Location, cur.Location) :: acc)
             shortestPath destNode destNode []
         
-        let rec setNeighborWeight (c : Node) (l : list<Node>) (acc : list<Node>) : list<Node> = 
-            match l with
-            | [] -> acc
-            | x :: xs -> 
-                x.Weight <- Math.Min(Vector2.Distance(x.Location, c.Location) + c.Weight, x.Weight)
-                setNeighborWeight c xs (x :: acc)
-        
+        let rec setNeighborWeight (c : Node) (l : list<Node>) (acc : list<Node>) = 
+            List.iter (fun (x:Node) -> x.Weight <- Math.Min(Vector2.Distance(x.Location, c.Location) + c.Weight, x.Weight) ) l
+            
         let rec trace (m : Node [,]) (q : list<Node>) = 
-            match q with
-            | [] -> ()
-            | _ ->
-                let (cur, rest) = closestNeighbor (List.tail q) (List.head q) [] // Take node with smallest distance
+            if not << List.isEmpty <| q then
+                let (cur, rest) = closestNeighbor2 (List.tail q) (List.head q) [] // Take node with smallest distance
                 if not cur.Visited then 
                     cur.Visited <- true
                     setNeighborWeight cur cur.Neighbors [] // Determine tentative distances
+                    cur.Neighbors
                     |> List.filter (fun (node : Node) -> not node.Visited)
                     |> List.append rest
                     |> trace m
                 else trace m rest
         
-        let m = fillMatrix roadList
+        let m = createMatrix roadList
         m.[int start.X, int start.Y].Weight <- float32 0
         trace m [ m.[int start.X, int start.Y] ] 
         traceback m.[int dest.X, int dest.Y]
