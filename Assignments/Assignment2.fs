@@ -32,7 +32,7 @@ module internal Helper2 =
                     new Node(h, add l (depth+1) , add r (depth+1), depth)
             add pList 0
                         
-        ///Corecursive divide and conquer approach on post-order kdtree traversal
+        ///Recursive divide and conquer approach on post-order kdtree traversal
         member Node.RangeSearch distance target : list<Vector2> = 
             let rec search (node:Node) (acc:list<Vector2>) depth  : list<Vector2> =
                 if isNull node then acc
@@ -51,7 +51,7 @@ module internal Helper2 =
             search Node [] 0
 
 module public Assignment2 = 
-    let FindSpecialBuildingsWithinDistanceFromHouse (specialBuildings:IEnumerable<Vector2>) (housesAndDistances:IEnumerable<Tuple<Vector2, Single>>) : IEnumerable<IEnumerable<Vector2>> = 
+    let FindSpecialBuildingsWithinDistanceFromHouse (specialBuildings:seq<Vector2>) (housesAndDistances:seq<Tuple<Vector2, Single>>) : seq<seq<Vector2>> = 
         let tree = Helper2.Node.Construct ( List.ofSeq specialBuildings )
         let result = List.map ( fun (tpl:Tuple<Vector2,Single>) -> tree.RangeSearch tpl.Item2 tpl.Item1 ) ( List.ofSeq housesAndDistances )
-        Enumerable.AsEnumerable ( List.map Enumerable.AsEnumerable result )
+        Seq.ofList ( List.map Seq.ofList result )

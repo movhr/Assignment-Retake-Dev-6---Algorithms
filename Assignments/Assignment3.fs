@@ -104,8 +104,8 @@ module internal Helper3 =
         traceback m.[int dest.X, int dest.Y]
 
 module public Assignment3 = 
-    let FindRoute (start : Vector2) (dest : Vector2) (roads : IEnumerable<Tuple<Vector2, Vector2>>) : IEnumerable<Vector2 * Vector2> = 
+    let FindRoute (start : Vector2) (dest : Vector2) (roads : seq<Tuple<Vector2, Vector2>>) : seq<Vector2 * Vector2> = 
         List.ofSeq roads
         |> List.map (fun (tpl : Tuple<Vector2, Vector2>) -> new Helper3.Edge(tpl.Item1, tpl.Item2))
         |> Helper3.Dijkstra start dest
-        |> Enumerable.AsEnumerable
+        |> Seq.ofList

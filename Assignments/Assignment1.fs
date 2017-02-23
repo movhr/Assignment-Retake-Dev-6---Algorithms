@@ -24,5 +24,5 @@ module internal Helper1 =
             merge target x y List.empty<Vector2>
     
 module public Assignment1 =
-    let SortSpecialBuildingsByDistance (house:Vector2) (specialBuildings:IEnumerable<Vector2>) = 
-        Enumerable.AsEnumerable ( Helper1.split house (List.ofSeq specialBuildings) )
+    let SortSpecialBuildingsByDistance (house:Vector2) (specialBuildings:seq<Vector2>) = 
+        Seq.ofList ( Helper1.split house (List.ofSeq specialBuildings) )
